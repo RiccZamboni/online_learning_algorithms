@@ -5,7 +5,7 @@ addpath(genpath('.'));
 
 %% Expert Setting
 
-alg = 'FL'; %EWA, FL
+alg = 'EWA'; %EWA, FL
 
 %Environment
 T = 20000;
@@ -31,7 +31,7 @@ for tt = 1:T
         exp_advice(ii, 1) = experts{ii}(y_t);
     end
     
-    % Algortithm choice   
+    % Algorithm choice   
     if strcmp(alg, 'EWA')
         pred(tt) = EWA(hat_w, exp_advice);
     elseif strcmp(alg, 'FL')
