@@ -5,7 +5,7 @@ addpath(genpath('.'));
 
 %% Expert Setting
 
-alg = 'EWA'; %EWA, FL
+alg = 'EWAt'; %EWA, FL, EWA_t
 
 %Environment
 T = 20000;
@@ -20,32 +20,38 @@ n_exp = length(experts);
 exp_loss = zeros(n_exp, T);
 
 % EWA
-hat_w = ones(n_exp, 1);
-%eta= 0.5;
+w_hat = ones(n_exp, 1);
 eta = sqrt(8*log(n_exp)/(T));
+eta_t = arrayfun(@(x) sqrt(8*log(n_exp)/(x)), 1:T);
 %%
 
 for tt = 1:T
     % Experts Advice
     for ii = 1:3
-        exp_advice(ii, 1) = experts{ii}(y_t);
+        exp_pred(ii, 1) = experts{ii}(y_t);
     end
     
     % Algorithm choice   
     if strcmp(alg, 'EWA')
-        pred(tt) = EWA(hat_w, exp_advice);
+        pred(tt) = EWA(w_hat, exp_pred);
+    elseif strcmp(alg, 'EWAt')
+        pred(tt) = EWA(w_hat, exp_pred);
     elseif strcmp(alg, 'FL')
-        pred(tt) = FL(exp_loss, exp_advice);
+        pred(tt) = FL(exp_loss, exp_pred);
     end
 
     %Reward
-    [y, loss(tt), exp_loss(:, tt)] = random_env(pred(tt), exp_advice, @quad_loss);
+    [y, loss(tt), exp_loss(:, tt)] = random_env(pred(tt), exp_pred, @quad_loss);
     
     %Update statistics
     if strcmp(alg, 'EWA')
-        update = exp(-eta*exp_loss(:, tt));
-        hat_w = hat_w.*update;
-        hat_w = hat_w./sum(hat_w);
+        local_update = exp(-eta*exp_loss(:, tt));
+        w_hat = w_hat.*local_update;
+        w_hat = w_hat./sum(w_hat);
+    elseif strcmp(alg, 'EWAt')
+        local_update = exp(-eta_t(tt)*exp_loss(:, tt));
+        w_hat = w_hat.*local_update;
+        w_hat = w_hat./sum(w_hat);
     end
     y_t = [y_t y];
 end
@@ -58,7 +64,8 @@ exp_losses = cumsum(exp_loss');
 
 figure();
 plot([alg_loss exp_losses]);
-legend('Agent loss', 'constant\_exp', 'greedy\_exp', 'window\_exp')
+title("Losses")
+legend('Agent loss', 'constant\_expert loss', 'greedy\_expert loss', 'window\_expert loss')
 
 %% Plot Regret
 regret = cumsum(loss) - min(cumsum(exp_loss'), [], 2);
@@ -70,8 +77,10 @@ hold on
 if strcmp(alg, 'EWA')
     %plot(arrayfun(@(x) log(n_exp)/eta + eta*x/8, 1:T));
     plot(arrayfun(@(x) sqrt(x*log(n_exp)/2), 1:T));
+elseif strcmp(alg, 'EWAt')
+    plot(arrayfun(@(x) sqrt(x*log(n_exp)/2) + sqrt(log(n_exp)/8), 1:T))
 elseif strcmp(alg, 'FL')
     plot(1:T, 8*(log(1:T)+1))
 end
-
-legend('regret', 'bound')
+title("Regrets")
+legend(['regret of' ' ' alg] , ['bound of' ' ' alg] )

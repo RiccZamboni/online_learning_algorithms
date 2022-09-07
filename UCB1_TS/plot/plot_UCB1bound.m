@@ -21,5 +21,5 @@ if t < 10 || mod(t, T / 20) == 0
     ax.XTick = 1:n_arms;
     title(['Arm selected a_' num2str(selected_arm) ', t = ' num2str(t)]);
     drawnow();
-    pause();
+    pause(0.3);
 end
